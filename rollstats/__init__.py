@@ -4,7 +4,7 @@ import math
 from collections import deque
 from typing import Any, Callable, List, Optional, Sequence, Union, SupportsFloat
 
-nan = float('nan')
+nan = float("nan")
 
 FloatFunc = Callable[[SupportsFloat], float]
 HookFunc = Callable[[SupportsFloat], Any]
@@ -39,23 +39,24 @@ class MemoryFloat(object):
     """A floating point number that knows its own history.
     Every time its save() function gets called, the current value gets appended to the history.
     """
-    __slots__ = ['value', 'history', 'hooks']
 
-    def __init__(self, value: float=nan):
+    __slots__ = ["value", "history", "hooks"]
+
+    def __init__(self, value: float = nan):
         self.value = value
         self.history = self.new_history_container()
         self.hooks: List[FloatFunc] = []
 
     @classmethod
-    def new_history_container(cls, data: Sequence=None):
+    def new_history_container(cls, data: Sequence = None):
         """Using an array for the history seems to save about 20% memory according to profiling."""
         if data:
-            return array.array('d', data)
+            return array.array("d", data)
         else:
-            return array.array('d')
+            return array.array("d")
 
     @classmethod
-    def transform(cls, *floats: 'MemoryFloat', func: FloatFunc) -> 'MemoryFloat':
+    def transform(cls, *floats: "MemoryFloat", func: FloatFunc) -> "MemoryFloat":
         values_now = [value.value for value in floats]
         value = func(*values_now)
         history = []
@@ -63,7 +64,7 @@ class MemoryFloat(object):
             values_at_time = [value.history[time] for value in floats]
             history.append(func(*values_at_time))
         result = MemoryFloat(value)
-        result.history = history
+        result.history = cls.new_history_container(history)
         return result
 
     def save(self) -> None:
@@ -71,7 +72,7 @@ class MemoryFloat(object):
         for hook in self.hooks:
             hook(self)
 
-    def copy(self) -> 'MemoryFloat':
+    def copy(self) -> "MemoryFloat":
         result = MemoryFloat(self.value)
         result.history = self.new_history_container(self.history)
         return result
@@ -80,11 +81,11 @@ class MemoryFloat(object):
         self.hooks.append(hook)
 
     @classmethod
-    def connect(cls, *inputs: 'MemoryFloat', output: 'MemoryFloat', func: FloatFunc):
+    def connect(cls, *inputs: "MemoryFloat", output: "MemoryFloat", func: FloatFunc):
         pool = set()
-        all_ids = { id(input) for input in inputs }
+        all_ids = {id(input) for input in inputs}
 
-        def hook(input: 'MemoryFloat') -> None:
+        def hook(input: "MemoryFloat") -> None:
             nonlocal pool
             pool.add(id(input))
             if set(pool) == all_ids:
@@ -133,11 +134,11 @@ class MemoryFloat(object):
     def __radd__(self, other) -> float:
         return other + self.value
 
-    def __iadd__(self, other) -> 'MemoryFloat':
+    def __iadd__(self, other) -> "MemoryFloat":
         self.value += other
         return self
 
-    def __isub__(self, other) -> 'MemoryFloat':
+    def __isub__(self, other) -> "MemoryFloat":
         self.value -= other
         return self
 
@@ -156,10 +157,10 @@ class MemoryFloat(object):
 
 class Container(object):
     def __init__(
-            self,
-            data: Optional[Sequence]=None,
-            window_size: Union[int, float]=float('inf'),
-        ):
+        self,
+        data: Optional[Sequence] = None,
+        window_size: Union[int, float] = float("inf"),
+    ):
         """Initialize the data and all metadata"""
         # Data container - if any data is provided in th initializer,
         # it will be filled at the end.
@@ -209,31 +210,33 @@ class Container(object):
         if data:
             self.push(*data)
 
-    def subscribe(self, varname: str, *inputs: 'MemoryFloat', func: FloatFunc) -> None:
+    def subscribe(self, varname: str, *inputs: "MemoryFloat", func: FloatFunc) -> None:
         output = MemoryFloat(nan)
         setattr(self, varname, output)
         MemoryFloat.connect(*inputs, output=output, func=func)
 
     def subscribe_var(self) -> None:
-        self.subscribe('var', self.S, self.n, func=var)
+        self.subscribe("var", self.S, self.n, func=var)
 
     def subscribe_std(self) -> None:
-        self.subscribe('std', self.S, self.n, func=std)
+        self.subscribe("std", self.S, self.n, func=std)
 
     def subscribe_pop_var(self) -> None:
-        self.subscribe('pop_var', self.S, self.n, func=pop_var)
+        self.subscribe("pop_var", self.S, self.n, func=pop_var)
 
     def subscribe_pop_std(self) -> None:
-        self.subscribe('pop_std', self.S, self.n, func=pop_std)
+        self.subscribe("pop_std", self.S, self.n, func=pop_std)
 
     def subscribe_z_score(self) -> None:
-        self.subscribe('zscore', self.S, self.n, self.value, self.M, func=zscore)
+        self.subscribe("zscore", self.S, self.n, self.value, self.M, func=zscore)
 
     def subscribe_mean(self) -> None:
-        self.subscribe('mean', self.M, func=lambda x: x)
+        self.subscribe("mean", self.M, func=lambda x: x)
 
     def subscribe_harmonic_mean(self) -> None:
-        self.subscribe('harmonic_mean', self.reciprocal_sum, self.n, func=lambda rec, n: n / rec)
+        self.subscribe(
+            "harmonic_mean", self.reciprocal_sum, self.n, func=lambda rec, n: n / rec
+        )
 
     def __getitem__(self, item: Union[int, slice]) -> Union[float, List[float]]:
         """Enable slicing syntax on the container."""

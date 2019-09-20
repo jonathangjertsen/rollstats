@@ -4,12 +4,15 @@ import rollstats
 
 nan = rollstats.nan
 
+
 def check_history(f, data):
     assert f.history == rollstats.MemoryFloat.new_history_container(data)
+
 
 def test_memfloat():
     """Check that a MemoryFloat can be created"""
     f = rollstats.MemoryFloat(0.0)
+
 
 def test_operations():
     """Check that we can do the right operations on the MemoryFloat"""
@@ -31,6 +34,7 @@ def test_operations():
     f -= 1
     assert f == approx(1)
 
+
 def test_save():
     """Test that history gets saved."""
     f = rollstats.MemoryFloat(0.0)
@@ -40,6 +44,7 @@ def test_save():
         f.save()
         f += 1
         check_history(f, list(range(i)))
+
 
 def test_copy():
     """Test that (deep) copying works."""
@@ -72,9 +77,35 @@ def test_copy():
     f2.value -= 1
     assert f1.value != f2.value
 
+
+def test_transform():
+    f1 = rollstats.MemoryFloat(0.0)
+    f2 = rollstats.MemoryFloat(1.0)
+    for i in range(1, 10):
+        f1 += 1
+        f1.save()
+        f2.save()
+
+    f_sum = rollstats.MemoryFloat.transform(f1, f2, func=lambda x, y: x + y)
+    check_history(f_sum, list(range(2, 11)))
+
+
+def test_repr():
+    f1 = rollstats.MemoryFloat(0.0)
+    assert repr(f1) == "MemoryFloat(v=0.00, history=[])"
+    for i in range(10):
+        f1 += 1
+        f1.save()
+    assert (
+        repr(f1)
+        == "MemoryFloat(v=10.00, history=['1.00', '2.00', '3.00', '4.00', '5.00', '6.00', '7.00', '8.00', '9.00', '10.00'])"
+    )
+
+
 def test_follow():
     i = 0
     values = [0, 1, 2, 3]
+
     def hook(f):
         nonlocal i
         assert f == values[i]
@@ -86,6 +117,7 @@ def test_follow():
         f1.assign(value)
         f1.save()
 
+
 def test_connect():
     i1 = rollstats.MemoryFloat(0)
     i2 = rollstats.MemoryFloat(0)
@@ -94,6 +126,7 @@ def test_connect():
 
     def sum_func(i1, i2, i3):
         return i1.value + i2.value + i3.value
+
     rollstats.MemoryFloat.connect(i1, i2, i3, output=o, func=sum_func)
 
     i1_values = [1, 2, 3]

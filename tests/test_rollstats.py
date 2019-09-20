@@ -33,7 +33,7 @@ def test_create_with_window():
 def test_create_with_data():
     """It should be possible to create a Container with data.
     If no window_size is provided, the data should be the same coming in as out"""
-    data = [1,2,3,4,5,6,]
+    data = [1, 2, 3, 4, 5, 6]
     for container_type in (list, deque):
         container = rollstats.Container(data=container_type(data))
         assert container.data == deque(data)
@@ -42,8 +42,36 @@ def test_create_with_data():
 def test_create_with_data_and_window():
     """Same as the test above, but the window size should cause only the last part
     to remain in the output"""
-    container = rollstats.Container(data=[1,2,3], window_size=2)
-    assert container.data == deque([2,3])
+    container = rollstats.Container(data=[1, 2, 3], window_size=2)
+    assert container.data == deque([2, 3])
+
+
+def test_create_with_zero_window():
+    """Negative window size => pushing has no effect"""
+    container = rollstats.Container(window_size=0)
+
+    for i in range(10):
+        container.push(i)
+        assert container.data == deque()
+
+
+def test_create_with_one_window():
+    """Negative window size => pushing has no effect"""
+    container = rollstats.Container(window_size=1)
+
+    for i in range(10):
+        container.push(i)
+        assert container.data == deque([i])
+
+
+def test_create_with_negative_window():
+    """Negative window size => pushing has no effect"""
+    container = rollstats.Container(window_size=-100)
+
+    for i in range(10):
+        container.push(i)
+        assert container.data == deque()
+
 
 def test_push():
     """When creating a Container with no window, slicing should work as expected"""
@@ -53,13 +81,15 @@ def test_push():
     assert container[0] == 1
     assert container[1] == 2
     assert container[:] == [1, 2]
-    assert container[1:] == [2,]
+    assert container[1:] == [2]
     assert len(container) == 2
+
 
 def test_push_n():
     """Check that container.n has the right history"""
-    container = rollstats.Container(data=[0,0,0,0,0,0,], window_size=3)
+    container = rollstats.Container(data=[0, 0, 0, 0, 0, 0], window_size=3)
     check_lists_approx_equal(container.n.history, [1, 2, 3, 3, 3, 3])
+
 
 def test_push_equivalence():
     """Check that equivalence checks work as they should"""
@@ -111,6 +141,15 @@ def test_push_equivalence():
     assert containers[4] != containers[3]
     assert containers[4] == containers[4]
 
+
+def test_equivalence_with_irrelevant_types():
+    container = rollstats.Container(window_size=4)
+    container.push(1, 2, 3)
+    assert container != None
+    assert container != [1, 2, 3]
+    assert container != 1
+
+
 def test_value():
     """Check that .value() always returns the last value"""
     container = rollstats.Container()
@@ -124,6 +163,7 @@ def test_value():
 
     check_lists_approx_equal(container.value.history, [1, 2, 3, 4, 5])
 
+
 def test_sum():
     """Check that .sum() returns the sum and has the right history"""
     container = rollstats.Container()
@@ -133,6 +173,7 @@ def test_sum():
     assert container.sum == 10
     check_lists_approx_equal(container.sum.history, [1, 3, 1, 3, 6, 10])
 
+
 def test_means():
     """Check that .mean() and .harmonic_mean() return the right means and have the right history"""
     container = rollstats.Container(window_size=2)
@@ -140,19 +181,22 @@ def test_means():
     container.subscribe_harmonic_mean()
 
     container.push(1, 2)
-    assert container.mean == approx(3/2)
-    assert container.harmonic_mean == approx(4/3)
+    assert container.mean == approx(3 / 2)
+    assert container.harmonic_mean == approx(4 / 3)
 
     container.push(3)
-    assert container.mean == approx(5/2)
-    assert container.harmonic_mean == approx(12/5)
+    assert container.mean == approx(5 / 2)
+    assert container.harmonic_mean == approx(12 / 5)
 
     container.push(4, 6)
     assert container.mean == approx(5)
-    assert container.harmonic_mean == approx(24/5)
+    assert container.harmonic_mean == approx(24 / 5)
 
-    check_lists_approx_equal(container.mean.history, [1, 3/2, 5/2, 7/2, 5])
-    check_lists_approx_equal(container.harmonic_mean.history, [1, 4/3, 12/5, 24/7, 24/5])
+    check_lists_approx_equal(container.mean.history, [1, 3 / 2, 5 / 2, 7 / 2, 5])
+    check_lists_approx_equal(
+        container.harmonic_mean.history, [1, 4 / 3, 12 / 5, 24 / 7, 24 / 5]
+    )
+
 
 def test_var_and_std_and_zscore():
     """Check that the var, std, and zscore calculations are correct and have the right history"""
@@ -173,21 +217,24 @@ def test_var_and_std_and_zscore():
 
     # Variance-based measurements should be those of (1,1,0)
     container.push(0)
-    assert container.var == approx(1/3)
-    assert container.std == approx(math.sqrt(1/3))
-    assert container.pop_var == approx(2/9)
-    assert container.pop_std == approx(math.sqrt(2/9))
-    assert container.zscore  == approx(-2 * math.sqrt(1/3))
+    assert container.var == approx(1 / 3)
+    assert container.std == approx(math.sqrt(1 / 3))
+    assert container.pop_var == approx(2 / 9)
+    assert container.pop_std == approx(math.sqrt(2 / 9))
+    assert container.zscore == approx(-2 * math.sqrt(1 / 3))
 
     # Check the histories
     check_lists_approx_equal(container.var.history, [nan, 0, 0, 1 / 3])
     check_lists_approx_equal(container.std.history, [nan, 0, 0, math.sqrt(1 / 3)])
     check_lists_approx_equal(container.pop_var.history, [nan, 0, 0, 2 / 9])
     check_lists_approx_equal(container.pop_std.history, [nan, 0, 0, math.sqrt(2 / 9)])
-    check_lists_approx_equal(container.zscore.history, [nan, nan, nan, -2 * math.sqrt(1 / 3)])
+    check_lists_approx_equal(
+        container.zscore.history, [nan, nan, nan, -2 * math.sqrt(1 / 3)]
+    )
+
 
 def test_custom_subscription():
     container = rollstats.Container(window_size=3)
-    container.subscribe('mean_plus_1', container.M, func=lambda m: m + 1)
+    container.subscribe("mean_plus_1", container.M, func=lambda m: m + 1)
     container.push(2, 1, 3)
     assert container.mean_plus_1 == 3
