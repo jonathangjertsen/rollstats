@@ -45,7 +45,7 @@ class MemoryFloat(object):
     def __init__(self, value: float = nan):
         self.value = value
         self.history = self.new_history_container()
-        self.hooks: List[FloatFunc] = []
+        self.hooks = [] # List[FloatFunc]
 
     @classmethod
     def new_history_container(cls, data: Sequence = None):
