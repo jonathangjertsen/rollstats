@@ -45,7 +45,7 @@ class MemoryFloat(object):
     def __init__(self, value: float = nan):
         self.value = value
         self.history = self.new_history_container()
-        self.hooks = [] # List[FloatFunc]
+        self.hooks = []  # List[FloatFunc]
 
     @classmethod
     def new_history_container(cls, data: Sequence = None):
@@ -97,7 +97,9 @@ class MemoryFloat(object):
             input.add_hook(hook)
 
     def __str__(self) -> str:
-        return f"MemoryFloat(v={self.value:.2f}, history={[f'{h:.2f}' for h in self.history]})"
+        return "MemoryFloat(v={:.2f}, history={})".format(
+            self.value, ["{:.2f}".format(h) for h in self.history]
+        )
 
     def __repr__(self) -> str:
         return str(self)
