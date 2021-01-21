@@ -1,4 +1,4 @@
 -e .
 codecov==2.0.15
 pytest==5.2.2
-pytest-cov==2.8.1
+pytest-cov==2.11.1
